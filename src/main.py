@@ -13,7 +13,6 @@ def flatten_image_to_bw(river_img):
 
 def thin_river(river_img):
     thinned = cv.ximgproc.thinning(river_img)
-    cv.imshow("thinned", thinned)
     return thinned
 
 
@@ -64,6 +63,21 @@ def distance_between_points(point_A, point_B):
             ) ** 0.5
 
 
+def visualize_result(input_img, bw_img, thin_img, sinuosity_val):
+    sinuosity_image = np.zeros(input_img.shape, dtype=np.uint8)
+    fc, lc = get_start_and_end_of_river(river_contour, bw_img.shape)
+    sinuosity_image = cv.drawContours(sinuosity_image, river_contour, -1,
+                                      (255, 0, 0), thickness=3)
+    sinuosity_image = cv.line(sinuosity_image, fc, lc, (0, 0, 255), thickness=3)
+
+    view_bw_image = np.stack((bw_img,) * 3, axis=-1)
+    view_thin_image = np.stack((thin_img,) * 3, axis=-1)
+    result_image = cv.hconcat(
+        [input_img, view_bw_image, view_thin_image, sinuosity_image])
+    cv.imshow(f"Calculated Sinuosity: {sinuosity_val}", result_image)
+    cv.waitKey(0)
+
+
 if __name__ == "__main__":
     try:
         input_img_path = sys.argv[1]
@@ -72,7 +86,7 @@ if __name__ == "__main__":
               "as first argument of script.", e)
         sys.exit(1)
 
-    visualize_result = True
+    should_visualize_result = True
     print(f"Using input image located at: "
           f"{os.path.join(os.getcwd(), input_img_path)}")
 
@@ -82,13 +96,7 @@ if __name__ == "__main__":
     river_contour = find_contour(thin_img)
     sinuosity = find_sinuosity(river_contour, bw_img.shape)
 
-    if visualize_result:
-        view_image = np.zeros(input_img.shape)
-        fc, lc = get_start_and_end_of_river(river_contour, bw_img.shape)
-        view_image = cv.drawContours(view_image, river_contour, -1, (255, 0, 0), thickness=3)
-        view_image = cv.line(view_image, fc, lc, (0, 0, 255), thickness=3)
-        cv.imshow("input", input_img)
-        cv.imshow("result", view_image)
-        cv.waitKey(0)
+    if should_visualize_result:
+        visualize_result(input_img, bw_img, thin_img, sinuosity)
 
     print(f"Found sinuosity of {sinuosity}")
